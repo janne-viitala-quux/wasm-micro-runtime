@@ -3,6 +3,8 @@
 
 string(TOUPPER ${WAMR_BUILD_TARGET} WAMR_BUILD_TARGET)
 
+# what is this - in Pertti's version
+#string(REGEX REPLACE THUMB "THUMB" WAMR_BUILD_TARGET_REX ${WAMR_BUILD_TARGET} )
 
 # Add definitions for the build target
 if (WAMR_BUILD_TARGET STREQUAL "X86_64")
@@ -16,16 +18,21 @@ elseif (WAMR_BUILD_TARGET MATCHES "ARM.*")
     add_definitions(-DBUILD_TARGET_ARM_VFP)
     add_definitions(-DBUILD_TARGET="${CMAKE_MATCH_1}")
   else ()
-    add_definitions(-DBUILD_TARGET_ARM)
+    add_definitions(-DBUILD_TARGET_ARM=1)   # =1
     add_definitions(-DBUILD_TARGET="${WAMR_BUILD_TARGET}")
   endif ()
 elseif (WAMR_BUILD_TARGET MATCHES "THUMB.*")
   if (WAMR_BUILD_TARGET MATCHES "(THUMB.*)_VFP")
-    add_definitions(-DBUILD_TARGET_THUMB_VFP)
-    add_definitions(-DBUILD_TARGET="${CMAKE_MATCH_1}")
+    add_definitions(-DBUILD_TARGET_THUMB_VFP=1)
+    set(CMAKE_ASM_FLAGS -Wa,--defsym,BUILD_TARGET="${CMAKE_MATCH_1}")
+    add_compile_definitions($<$<COMPILE_LANGUAGE:C>:BUILD_TARGET="${CMAKE_MATCH_1}">)
   else ()
-    add_definitions(-DBUILD_TARGET_THUMB)
-    add_definitions(-DBUILD_TARGET="${WAMR_BUILD_TARGET}")
+    add_definitions(-DBUILD_TARGET_THUMB=)
+    # 2020-09-20 pa attempt to patch cmake problem of escaping asm defines
+    #add_definitions(-DBUILD_TARGET="${WAMR_BUILD_TARGET}")
+    set(CMAKE_ASM_FLAGS -Wa,--defsym,BUILD_TARGET=ARMxxx)  # "${WAMR_BUILD_TARGET_REX}")
+    add_compile_definitions($<$<COMPILE_LANGUAGE:C>:BUILD_TARGET="${WAMR_BUILD_TARGET_REX}">)
+    #add_definitions(-DBUILD_TARGET=${WAMR_BUILD_TARGET})
   endif ()
 elseif (WAMR_BUILD_TARGET MATCHES "AARCH64.*")
   add_definitions(-DBUILD_TARGET_AARCH64)
